@@ -22,7 +22,7 @@ void __swap(_Ty& __x, _Ty& __y)
 {
     std::swap(__x, __y);
 
-    //std::lock_guard<std::mutex> guard(mu);
+    std::lock_guard<std::mutex> guard(mu);
 
     //mu.lock();
 
