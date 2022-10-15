@@ -109,30 +109,30 @@ private:
 class StateUnion : public State 
 {
 private:
-    State const* state1, * state2;
+    State const& state1, & state2;
 
 public:
-    StateUnion() : state1(), state2() { }
-    StateUnion(State* s1, State* s2) : state1(s1), state2(s2) { }
+    StateUnion() : state1(DiscreteState()), state2(DiscreteState()) { }
+    StateUnion(State const& s1, State const& s2) : state1(s1), state2(s2) { }
 
     bool contains(int s) const override 
     {
-        return state1 -> contains(s) || state2 -> contains(s);
+        return state1.contains(s) || state2.contains(s);
     }
 };
 
 class StateIntersection : public State 
 {
 private:
-    State const* state1, * state2;
+    State const& state1, & state2;
 
 public:
-    StateIntersection() : state1(), state2() { }
-    StateIntersection(State* s1, State* s2) : state1(s1), state2(s2) { }
+    StateIntersection() : state1(DiscreteState()), state2(DiscreteState()) { }
+    StateIntersection(State const& s1, State const& s2) : state1(s1), state2(s2) { }
 
     bool contains(int s) const override 
     {
-        return state1 -> contains(s) && state2 -> contains(s);
+        return state1.contains(s) && state2.contains(s);
     }
 };
 
@@ -159,29 +159,40 @@ public:
     }
 };
 
+#pragma region UtilityForTests
+
+template <class T>
+void func1(T s) {
+    for (int i = 0; i < 10000; i += 10) {
+        ProbabilityTest pt(10, 0, 100, i + 1);
+        std::cout << std::fixed << std::setw(10) << pt(s) << '\n';
+    }
+    std::cout << '\n';
+}
+
+template <class T>
+void func2(T s, int ss) {
+    ProbabilityTest pt1(10, 0, 100, 1000000), pt2(10, 0, 200, 1000000), pt3(10, 0, 500, 1000000);
+    std::cout << ss << ' ' << 101 << ' ' << std::fixed << std::setprecision(6) << pt1(s) << ' ' << ss / 101.0 << '\n';
+    std::cout << ss << ' ' << 201 << ' ' << std::fixed << std::setprecision(6) << pt2(s) << ' ' << ss / 201.0 << '\n';
+    std::cout << ss << ' ' << 501 << ' ' << std::fixed << std::setprecision(6) << pt3(s) << ' ' << ss / 501.0 << "\n\n";
+}
+
+template <class T>
+void func3(T s) {
+    func1(s);
+    func2(s, 11);
+}
+
+#pragma endregion
+
 int main(int argc, const char* argv[])
 {
 #pragma region Test 1
     // -- Test 1 ------------------------------ //
     {
-        // Open file to export data to Python script
-        std::fstream table;
-        table.open("..\\Plots\\temp.txt", std::ios::out);
-        system("del \"..\\Plots\\ResultsTest1.txt\"");
-
-        // Create a couple of states
-        SegmentState s(45, 54);
-        SetState ss({ 1, 10, 11, 25, 37, 89, 95, 97, 98, 99 });
-
-        // Probability test
-        for (int t = 10; t <= 10000; t += 10) {
-            ProbabilityTest pt(1001, 0, 100, t);
-            table << t << ' ' << pt(s) << ' ' << pt(ss) << '\n';
-        }
-
-        // Close file
-        table.close();
-        system("ren \"..\\Plots\\temp.txt\" \"ResultsTest1.txt\"");
+        func1(SegmentState(0, 10));
+        func1(SetState({ 1, 3, 5, 7, 11, 23, 48, 57, 60, 90, 99 }));
     }
     // ---------------------------------------- //
 #pragma endregion
@@ -189,12 +200,9 @@ int main(int argc, const char* argv[])
 #pragma region Test 2
     // -- Test 2 ------------------------------ //
     {
-        // Create state
-        SetState ss({ 1, 10, 11, 25, 37, 89, 95, 97, 98, 99 });
-
-        // Probability test
-        ProbabilityTest pt(1001, 0, 100, 100000);
-        std::cout << std::setprecision(2) << 10.0 / 100.0 << std::setw(10) << std::setprecision(5) << pt(ss) << "\n\n";
+        func2(SegmentState(0, 10), 11);
+        func2(SegmentState(0, 20), 21);
+        func2(SegmentState(0, 50), 51);
     }
     // ---------------------------------------- //
 #pragma endregion
@@ -202,10 +210,9 @@ int main(int argc, const char* argv[])
 #pragma region Test 3
     // -- Test 3 ------------------------------ //
     {
-        SegmentState ss(1, 10);
-        StateUnion su(new SegmentState(ss), new SetState({ 50 }));
-        ProbabilityTest pt(1001, 0, 100, 1000000);
-        std::cout << pt(su);
+        func3(StateUnion(SegmentState(0, 9), DiscreteState(11)));
+        func3(SegmentStateGaps(SegmentState(0, 11), SetState({ 5 })));
+        func3(StateIntersection(SegmentState(0, 11), SegmentState(1, 12)));
     }
     // ---------------------------------------- //
 #pragma endregion
